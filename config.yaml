@@ -1,0 +1,25 @@
+data:
+  raw_path: data/raw/creditcard.csv
+  processed_path: data/processed/
+  test_size: 0.2
+  val_size: 0.2
+  random_state: 42
+
+preprocessing:
+  scale_amount: true
+  scale_time: true
+  missing_threshold: 0.05
+
+model:
+  type: "xgboost"
+  params:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    scale_pos_weight: 200
+    random_state: 42
+  threshold: 0.5
+
+mlflow:
+  experiment_name: "credit_fraud_detection"
+  tracking_uri: "http://localhost:5000"

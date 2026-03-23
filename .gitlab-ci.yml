@@ -1,0 +1,76 @@
+stages:
+  - test
+  - data-validation
+  - train
+  - compare
+  - build
+  - deploy
+  - drift
+
+variables:
+  MLFLOW_TRACKING_URI: http://mlflow:5000  # si MLflow est lancé dans le pipeline (à gérer)
+
+# Services: MLflow peut être lancé comme service
+services:
+  - name: mlflow:latest
+    alias: mlflow
+
+# Stage test (CI-1)
+test:
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - pytest tests/  # tests unitaires (data validation, preprocessing, train mock)
+  only:
+    - branches
+
+# Stage data-validation (CI-3)
+data-validation:
+  stage: data-validation
+  script:
+    - python src/data/validate.py --data data/raw/creditcard.csv --threshold 0.05
+  only:
+    - branches
+
+# Stage train (CI-4)
+train:
+  stage: train
+  script:
+    - python src/models/train.py --config config.yaml
+  artifacts:
+    paths:
+      - mlruns/  # pour récupérer les runs
+  only:
+    - main
+    - merge_requests
+
+# Stage compare (CI-5)
+compare:
+  stage: compare
+  script:
+    - python src/evaluation/compare_models.py --current-run-id $CI_JOB_ID --threshold 0.01
+  only:
+    - main
+  dependencies:
+    - train
+
+# Stage build (CI-6)
+build:
+  stage: build
+  script:
+    - docker build -t fraud-detection:${CI_COMMIT_SHORT_SHA} -f docker/Dockerfile .
+    - docker tag fraud-detection:${CI_COMMIT_SHORT_SHA} fraud-detection:latest
+  only:
+    - main
+
+# Stage deploy (CI-7)
+deploy:
+  stage: deploy
+  script:
+    - docker run -d -p 8000:8000 --name fraud-api fraud-detection:latest python src/api/app.py
+    # (supposons que l'API FastAPI soit dans src/api/app.py)
+  only:
+    - main
+  environment:
+    name: production
+    url: http://my-server:8000

@@ -1,0 +1,14 @@
+pandas
+numpy
+scikit-learn
+xgboost
+matplotlib
+seaborn
+mlflow
+pytest
+black
+flake8
+pyyaml
+fastapi
+uvicorn
+docker
