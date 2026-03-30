@@ -168,4 +168,3 @@ Edit `config.yaml` to adjust:
 
 ***
 
-Happy coding!
